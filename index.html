@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0B0F17" />
+  <meta name="description" content="Style Spy — Web Edition. Extract dominant colours from website screenshots, analyse HTML/CSS typography, save design kits locally, and export CSS variables." />
+  <title>Style Spy — Web Design Kit Extractor</title>
+  <link rel="icon" type="image/png" href="./assets/icons/favicon.png" />
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+  <!-- Header -->
+  <header class="navbar">
+    <div class="nav-inner">
+      <div class="brand">
+        <img src="./assets/icons/icon-192.png" alt="Style Spy Logo" class="brand-logo" />
+        <div>
+          <span class="brand-name">Style Spy</span>
+          <span class="brand-tagline">Extract colours &amp; typography into reusable CSS kits</span>
+        </div>
+      </div>
+      <div class="nav-actions">
+        <button type="button" class="btn btn-ghost btn-sm" id="btn-load-sample">Load Sample</button>
+        <a href="#kits-section" class="btn btn-outline btn-sm" id="btn-nav-kits">Saved Kits (<span id="nav-kits-count">0</span>)</a>
+        <button type="button" class="btn btn-danger-ghost btn-sm" id="btn-clear-local">Clear Local Data</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Browser Limitation & Privacy Notice -->
+    <div class="info-banner">
+      <div>
+        <strong>100% Local Browser Analysis:</strong> Normal websites cannot inspect another open browser tab directly due to browser security rules. Upload a website screenshot and/or paste HTML &amp; CSS below—all processing stays on your device.
+      </div>
+    </div>
+
+    <div id="global-alert" class="alert-banner hidden" role="alert"></div>
+
+    <!-- ==================== 1. ANALYSERS GRID ==================== -->
+    <div class="analyzers-grid">
+      <!-- Left: Screenshot Colour Analyser -->
+      <section class="card" aria-labelledby="colour-heading">
+        <div class="card-head">
+          <div>
+            <h2 id="colour-heading">1. Colour Analyser</h2>
+            <p class="card-sub">Upload a PNG/JPG screenshot to extract ranked dominant colours or click any pixel.</p>
+          </div>
+          <div class="head-actions">
+            <button type="button" class="btn btn-outline btn-sm hidden" id="btn-reanalyse-img">↻ Reanalyse</button>
+            <label class="btn btn-primary btn-sm" for="screenshot-input">Upload Screenshot</label>
+            <input type="file" id="screenshot-input" accept=".png,.jpg,.jpeg,image/png,image/jpeg" class="hidden" />
+          </div>
+        </div>
+
+        <div class="dropzone" id="screenshot-dropzone">
+          <div id="dropzone-placeholder">
+            <div class="dropzone-icon">🎨</div>
+            <p><strong>Drop a website screenshot here</strong> (PNG, JPG, JPEG)</p>
+            <p class="muted" style="font-size:12.5px;">Click anywhere on the loaded image to sample an exact pixel colour.</p>
+          </div>
+          <canvas id="screenshot-canvas" class="hidden" title="Click anywhere to pick a colour"></canvas>
+        </div>
+
+        <!-- Pixel Picker & Manual Color Add -->
+        <div class="manual-color-bar">
+          <div class="picked-preview" id="picked-preview">
+            <span class="swatch-mini" id="picked-swatch" style="background:#6366f1;"></span>
+            <span class="mono" id="picked-label">Click screenshot or pick colour</span>
+          </div>
+          <div class="manual-inputs">
+            <input type="color" id="manual-color-picker" value="#6366f1" aria-label="Pick manual colour" />
+            <input type="text" id="manual-hex-input" value="#6366F1" class="mono input-hex" maxlength="7" aria-label="HEX colour code" />
+            <button type="button" class="btn btn-outline btn-sm" id="btn-add-manual-color">+ Add Colour</button>
+          </div>
+        </div>
+
+        <!-- Extracted Palette -->
+        <div class="palette-head">
+          <span class="sub-label">Extracted Palette (<span id="palette-count">0</span>)</span>
+          <div class="palette-actions">
+            <button type="button" class="btn-link" id="btn-copy-palette">Copy All HEX</button>
+            <button type="button" class="btn-link" id="btn-add-colors-to-kit">+ Add to Active Kit</button>
+          </div>
+        </div>
+        <div id="extracted-palette-list" class="palette-grid"></div>
+      </section>
+
+      <!-- Right: HTML/CSS Typography Analyser -->
+      <section class="card" aria-labelledby="typo-heading">
+        <div class="card-head">
+          <div>
+            <h2 id="typo-heading">2. Typography Analyser</h2>
+            <p class="card-sub">Paste HTML and/or CSS to extract font families, sizes, weights, and spacing.</p>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" id="btn-analyse-typo">Analyse Typography</button>
+        </div>
+
+        <div class="form-group">
+          <label for="ref-url-input">Reference Website URL (Optional — recorded in kit only, not fetched)</label>
+          <input type="url" id="ref-url-input" placeholder="https://example.com" />
+        </div>
+
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="html-input">Paste HTML (Optional)</label>
+            <textarea id="html-input" rows="5" class="mono" placeholder="<h1>Hero Title</h1>&#10;<p>Body copy...</p>"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="css-input">Paste CSS *</label>
+            <textarea id="css-input" rows="5" class="mono" placeholder="h1 { font-family: 'Inter', sans-serif; font-size: 32px; font-weight: 700; }&#10;body { font-family: 'Lora', serif; font-size: 16px; }"></textarea>
+          </div>
+        </div>
+
+        <div class="palette-head">
+          <span class="sub-label">Extracted Typography (<span id="typo-count">0</span>)</span>
+          <button type="button" class="btn-link" id="btn-add-typo-to-kit">+ Add to Active Kit</button>
+        </div>
+        <div id="extracted-typo-list" class="typo-list"></div>
+      </section>
+    </div>
+
+    <!-- ==================== 2. DESIGN KIT CREATOR & CSS EXPORT ==================== -->
+    <section id="kits-section" class="card kits-section" aria-labelledby="kits-heading">
+      <div class="card-head">
+        <div>
+          <h2 id="kits-heading">3. Design Kit Creator &amp; CSS Export</h2>
+          <p class="card-sub">Save extracted colours and typography into named kits, edit details, and export ready-to-use CSS.</p>
+        </div>
+        <div class="head-actions">
+          <button type="button" class="btn btn-primary btn-sm" id="btn-new-kit">+ Create Kit</button>
+        </div>
+      </div>
+
+      <div class="kits-workspace">
+        <!-- Saved Kits List -->
+        <div class="saved-kits-col">
+          <div class="sub-label" style="margin-bottom:8px;">Saved Kits</div>
+          <div id="saved-kits-list" class="saved-kits-list"></div>
+        </div>
+
+        <!-- Active Kit Editor -->
+        <div class="active-kit-col">
+          <div id="active-kit-empty" class="empty-box">
+            <p>No kit selected. Click <strong>+ Create Kit</strong> to start a new design kit.</p>
+          </div>
+
+          <div id="active-kit-editor" class="hidden">
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="kit-name-input">Kit Name *</label>
+                <input type="text" id="kit-name-input" placeholder="e.g., Modern SaaS Dark" />
+              </div>
+              <div class="form-group">
+                <label for="kit-url-input">Reference URL (Optional)</label>
+                <input type="url" id="kit-url-input" placeholder="https://example.com" />
+              </div>
+            </div>
+
+            <div class="kit-subgrid">
+              <div>
+                <div class="sub-label">Kit Colours (<span id="kit-colors-count">0</span>)</div>
+                <div id="kit-colors-list" class="kit-chips"></div>
+              </div>
+              <div>
+                <div class="sub-label">Kit Typography (<span id="kit-fonts-count">0</span>)</div>
+                <div id="kit-fonts-list" class="kit-chips"></div>
+              </div>
+            </div>
+
+            <div class="kit-actions-bar">
+              <div class="head-actions">
+                <button type="button" class="btn btn-primary btn-sm" id="btn-save-kit">💾 Save Kit</button>
+                <button type="button" class="btn btn-danger-ghost btn-sm" id="btn-delete-kit">Delete Kit</button>
+              </div>
+              <div class="head-actions">
+                <button type="button" class="btn btn-outline btn-sm" id="btn-preview-css">👁 Preview CSS</button>
+                <button type="button" class="btn btn-outline btn-sm" id="btn-copy-css">📋 Copy CSS</button>
+                <button type="button" class="btn btn-emerald btn-sm" id="btn-download-css">⬇ Download CSS</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 3. LIVE DESIGN PREVIEW ==================== -->
+    <section class="card preview-section" aria-labelledby="preview-heading">
+      <div class="card-head">
+        <div>
+          <h2 id="preview-heading">4. Live Design Preview</h2>
+          <p class="card-sub">See your active design kit applied live to a sample webpage layout.</p>
+        </div>
+        <select id="preview-kit-select" class="select-sm" aria-label="Select kit to preview"></select>
+      </div>
+
+      <div id="live-preview-stage" class="live-preview-stage">
+        <div class="lp-navbar">
+          <strong class="lp-brand">Brand Preview</strong>
+          <div class="lp-links">
+            <a href="#preview-heading" class="lp-link">Features</a>
+            <a href="#preview-heading" class="lp-link">Pricing</a>
+          </div>
+        </div>
+        <div class="lp-hero">
+          <h3 class="lp-heading">Design systems built from real inspiration</h3>
+          <p class="lp-body">
+            This live preview updates instantly with your selected kit's background, text, primary &amp; secondary colours, and heading/body typography settings.
+          </p>
+          <div class="lp-controls">
+            <input type="text" class="lp-input" value="hello@stylespy.dev" readonly aria-label="Sample input" />
+            <button type="button" class="lp-btn-primary">Primary Action</button>
+            <button type="button" class="lp-btn-secondary">Secondary</button>
+          </div>
+        </div>
+        <div class="lp-cards-row">
+          <div class="lp-card">
+            <h4 class="lp-subheading">Reusable Tokens</h4>
+            <p class="lp-body-sm">Export clean <code>:root</code> CSS variables and component styles for any HTML page.</p>
+          </div>
+          <div class="lp-card">
+            <h4 class="lp-subheading">100% Local Storage</h4>
+            <p class="lp-body-sm">Your kits stay in your browser and survive restarts with zero external tracking.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Privacy Footer Card -->
+    <section class="card privacy-card">
+      <h3>Privacy &amp; Security</h3>
+      <p>All screenshot pixel analysis, CSS parsing, design kit storage (<code>localStorage</code>), and CSS exports run 100% locally in your browser. Zero screenshots or code snippets are ever transmitted to external servers.</p>
+    </section>
+  </main>
+
+  <!-- Modal: Preview Generated CSS -->
+  <div id="modal-css" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-css-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modal-css-title">Generated CSS Variables &amp; Theme</h3>
+        <button type="button" class="modal-close" id="modal-css-close" aria-label="Close">&times;</button>
+      </div>
+      <textarea id="css-preview-textarea" rows="16" class="mono" readonly></textarea>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline btn-sm" id="modal-copy-css">📋 Copy CSS</button>
+        <button type="button" class="btn btn-emerald btn-sm" id="modal-download-css">⬇ Download .css</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <script src="./js/storage.js"></script>
+  <script src="./js/color-analyzer.js"></script>
+  <script src="./js/typography-analyzer.js"></script>
+  <script src="./js/kit-manager.js"></script>
+  <script src="./js/css-exporter.js"></script>
+  <script src="./js/preview.js"></script>
+  <script src="./js/app.js"></script>
+</body>
+</html>
